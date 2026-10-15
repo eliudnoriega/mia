@@ -1,0 +1,327 @@
+<div class="dashboard-page">
+  <!-- 1. Hero Greeting Section -->
+  <section class="hero-section">
+    <div class="hero-left">
+      <span class="greeting-time">{{ greeting() }}</span>
+      <h1 class="user-fullname">{{ userName() }}</h1>
+      <p class="greeting-hint">Selecciona el sistema al que deseas ingresar</p>
+    </div>
+
+    <!-- Motivational Corporate Banner on Right -->
+    <div class="hero-banner-card">
+      <div class="banner-content">
+        <h2 class="banner-title">Juntos<br>seguimos adelante</h2>
+        <p class="banner-subtitle">Un solo acceso, todas tus herramientas.</p>
+      </div>
+      <!-- Decorative layered shapes matching screenshot -->
+      <div class="banner-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Search & Filter Bar -->
+  <section class="filter-toolbar">
+    <!-- Search Input -->
+    <div class="search-field-container">
+      <svg viewBox="0 0 24 24" class="search-glass-icon" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Buscar un sistema..." 
+        [(ngModel)]="searchTerm" 
+        (input)="onSearchChange()">
+      @if (searchTerm) {
+        <button type="button" class="clear-search-btn" (click)="clearSearch()">
+          &times;
+        </button>
+      }
+    </div>
+
+    <!-- Right Controls: Category Filter + View Toggles -->
+    <div class="filter-controls-right">
+      <!-- Category Dropdown with Funnel Icon -->
+      <div class="category-select-wrapper">
+        <svg viewBox="0 0 24 24" class="funnel-icon" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <select 
+          class="category-select" 
+          [value]="projectService.filter().category"
+          (change)="onCategoryChange($event)">
+          <option value="todos">Todos los sistemas</option>
+          <option value="corporativo">Corporativo</option>
+          <option value="web">Portales Web</option>
+          <option value="api">APIs & Backend</option>
+          <option value="rrhh">Recursos Humanos</option>
+          <option value="operaciones">Operaciones & Tablet</option>
+          <option value="finanzas">Finanzas & Ventas</option>
+          <option value="seguridad">Seguridad & SSO</option>
+          <option value="soporte">Mesa de Ayuda TI</option>
+        </select>
+        <svg viewBox="0 0 24 24" class="chevron-down-icon" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+
+      <!-- View Mode Toggles (Grid vs List) -->
+      <div class="view-mode-group">
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          [class.active]="projectService.filter().viewMode === 'grid'"
+          (click)="setViewMode('grid')"
+          title="Vista Cuadrícula">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+          </svg>
+        </button>
+
+        <button 
+          type="button" 
+          class="view-toggle-btn" 
+          [class.active]="projectService.filter().viewMode === 'list'"
+          (click)="setViewMode('list')"
+          title="Vista Lista">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <rect x="3" y="5" width="4" height="4" rx="1"/>
+            <rect x="10" y="5" width="11" height="4" rx="1"/>
+            <rect x="3" y="11" width="4" height="4" rx="1"/>
+            <rect x="10" y="11" width="11" height="4" rx="1"/>
+            <rect x="3" y="17" width="4" height="4" rx="1"/>
+            <rect x="10" y="17" width="11" height="4" rx="1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2.5 Admin API Integration Status Bar -->
+  <section class="api-integration-strip">
+    <div class="api-status-left">
+      <div class="api-badge" [class.connected]="projectService.isApiConnected()">
+        <span class="status-pulse"></span>
+        <span class="api-title">admin-api (8080):</span>
+        <span class="api-text">
+          @if (projectService.isApiConnected()) {
+            @if (authService.isAdmin() && projectService.selectedUserId() === 0) {
+              Conectado a /api/projects (Todos los proyectos)
+            } @else {
+              Conectado a /api/users/{{ projectService.selectedUserId() || (authService.currentUser()?.id ?? 1) }}/projects (Proyectos asignados)
+            }
+          } @else {
+            Modo Local / Reconectando
+          }
+        </span>
+      </div>
+
+      <!-- Companies Badge from /api/companies -->
+      @if (projectService.companies().length > 0) {
+        <div class="companies-badge" title="Empresas obtenidas desde /api/companies">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+          </svg>
+          <span>{{ projectService.companies().length }} Empresas asociadas</span>
+        </div>
+      }
+    </div>
+
+    <div class="api-controls-right">
+      @if (authService.isAdmin()) {
+        <label for="user-select-nav" class="user-select-label">Vista:</label>
+        <select 
+          id="user-select-nav" 
+          class="user-select-input" 
+          [value]="projectService.selectedUserId()"
+          (change)="onUserSelect(+$any($event.target).value)">
+          <option [value]="0">Todos los Proyectos (Catálogo Completo - 26)</option>
+          <option [value]="1">Admin Corporativo - Asignados (ID: 1)</option>
+          <option [value]="2">Carlos Ingeniero / Dev - Asignados (ID: 2)</option>
+          <option [value]="3">Sofía Consultora / Analyst - Asignados (ID: 3)</option>
+        </select>
+      }
+
+      <button 
+        type="button" 
+        class="sync-btn" 
+        (click)="syncWithApi()" 
+        title="Sincronizar proyectos con admin-api">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="projectService.isLoading()">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Sincronizar</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 3. Section Title & Systems Counter -->
+  <section class="systems-header-section">
+    <div class="title-with-actions">
+      <h2 class="section-heading">Sistemas disponibles</h2>
+      @if (authService.isAdmin() && projectService.selectedUserId() === 0) {
+        <span class="role-scope-badge admin">Catálogo Completo (Admin)</span>
+      } @else {
+        <span class="role-scope-badge user">Proyectos Asignados</span>
+      }
+      @if (projectService.filter().onlyFavorites) {
+        <span class="active-filter-tag">Filtrado: Favoritos</span>
+      }
+    </div>
+    <span class="systems-total-count">
+      {{ projectService.totalFilteredCount() }} sistemas
+    </span>
+  </section>
+
+  <!-- 4. Systems Display (Grid or List) -->
+  <section class="systems-content-area">
+    @if (projectService.paginatedProjects().length > 0) {
+      @if (projectService.filter().viewMode === 'grid') {
+        <!-- 4-Column Grid matching screenshot -->
+        <div class="projects-grid">
+          @for (item of projectService.paginatedProjects(); track item.id) {
+            <app-project-card
+              [project]="item"
+              (toggleFavorite)="handleToggleFavorite($event)"
+              (launch)="handleLaunch($event)"
+              (viewDetails)="handleViewDetails($event)"
+              (edit)="handleEdit($event)"
+              (delete)="handleDelete($event)">
+            </app-project-card>
+          }
+        </div>
+      } @else {
+        <!-- List View -->
+        <div class="projects-list-stack">
+          @for (item of projectService.paginatedProjects(); track item.id) {
+            <app-project-list-row
+              [project]="item"
+              (toggleFavorite)="handleToggleFavorite($event)"
+              (launch)="handleLaunch($event)"
+              (viewDetails)="handleViewDetails($event)"
+              (edit)="handleEdit($event)"
+              (delete)="handleDelete($event)">
+            </app-project-list-row>
+          }
+        </div>
+      }
+    } @else {
+      <!-- Empty State -->
+      <div class="empty-state-card animate-scale">
+        <div class="empty-icon-wrap">
+          <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#94a3b8" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </div>
+        <h3>No se encontraron sistemas</h3>
+        <p>No existen proyectos que coincidan con "{{ searchTerm }}" o los filtros aplicados.</p>
+        <button type="button" class="btn-primary" (click)="projectService.resetFilters(); searchTerm = ''">
+          Restablecer Filtros
+        </button>
+      </div>
+    }
+  </section>
+
+  <!-- 5. Pagination Bar matching reference screenshot -->
+  @if (projectService.totalFilteredCount() > 0) {
+    <section class="pagination-section">
+      <div class="pagination-info">
+        Mostrando 
+        <strong>{{ projectService.paginationInfo().start }}</strong> - 
+        <strong>{{ projectService.paginationInfo().end }}</strong> de 
+        <strong>{{ projectService.paginationInfo().total }}</strong> sistemas
+      </div>
+
+      <div class="pagination-controls">
+        <!-- Previous Page Button -->
+        <button 
+          type="button" 
+          class="page-nav-btn" 
+          [disabled]="projectService.currentPage() === 1"
+          (click)="prevPage()"
+          title="Página anterior">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <!-- Numbered Page Buttons -->
+        @for (p of paginationPages(); track p) {
+          <button 
+            type="button" 
+            class="page-num-btn" 
+            [class.active]="p === projectService.currentPage()"
+            (click)="goToPage(p)">
+            {{ p }}
+          </button>
+        }
+
+        <!-- Next Page Button -->
+        <button 
+          type="button" 
+          class="page-nav-btn" 
+          [disabled]="projectService.currentPage() === projectService.totalPages()"
+          (click)="nextPage()"
+          title="Página siguiente">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </section>
+  }
+
+  <!-- 6. Bottom Support Card matching screenshot -->
+  <section class="support-footer-card">
+    <div class="support-text-area">
+      <h3 class="support-title">¿Necesitas ayuda?</h3>
+      <p class="support-desc">
+        Si tienes problemas con tus accesos, credenciales SSO o requieres soporte para algún sistema, nuestro equipo de TI está listo para asistirte.
+      </p>
+    </div>
+    <button type="button" class="btn-outline-blue support-action-btn" (click)="openSupport()">
+      Soporte
+    </button>
+  </section>
+</div>
+
+<!-- Modals -->
+@if (isModalOpen()) {
+  <app-project-modal
+    [projectToEdit]="selectedProjectToEdit()"
+    (save)="handleSaveProject($event)"
+    (cancel)="isModalOpen.set(false)">
+  </app-project-modal>
+}
+
+@if (isDetailModalOpen() && selectedProjectDetail()) {
+  <app-project-detail-modal
+    [project]="selectedProjectDetail()!"
+    (close)="isDetailModalOpen.set(false)"
+    (launch)="handleLaunch($event)"
+    (edit)="handleEdit($event)">
+  </app-project-detail-modal>
+}
+
+@if (isSupportModalOpen()) {
+  <app-support-modal
+    (close)="isSupportModalOpen.set(false)"
+    (ticketCreated)="handleTicketCreated($event)">
+  </app-support-modal>
+}
+
+@if (isPolicyModalOpen()) {
+  <app-policy-modal
+    (close)="isPolicyModalOpen.set(false)">
+  </app-policy-modal>
+}

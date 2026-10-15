@@ -1,0 +1,44 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /admin-api/api
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: admin-api
+  
+  # Base de datos MySQL: mia_db
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/mia_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+    driverClassName: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+  
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+# Configuración JWT y Seguridad
+jwt:
+  # Clave secreta segura HMAC-SHA256 codificada en Base64 (256 bits)
+  secret: NEtGbld4U09rSmd1N3h5OEE/RCtHYlBkU2dWa1lwM3M2djk=
+  # Tiempo de expiración del token en milisegundos (24 horas = 86400000 ms)
+  expiration: 86400000
+
+# Swagger OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
+    doc-expansion: none

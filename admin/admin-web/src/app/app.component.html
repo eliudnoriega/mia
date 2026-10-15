@@ -1,0 +1,70 @@
+@if (isLoginRoute()) {
+  <!-- Clean Full-Screen Login Viewport -->
+  <router-outlet></router-outlet>
+  <app-toast-container></app-toast-container>
+} @else {
+  <!-- Corporate Dashboard Layout -->
+  <div class="app-layout">
+    <!-- Top Global Navbar -->
+    <app-navbar
+      (toggleSidebar)="toggleSidebar()"
+      (openNewProject)="isNewProjectOpen.set(true)"
+      (openAppLauncher)="isLauncherOpen.set(true)"
+      (openProfileModal)="isProfileOpen.set(true)"
+      (openRolesModal)="isRolesOpen.set(true)"
+      (openUsersModal)="isUsersOpen.set(true)">
+    </app-navbar>
+
+    <div class="app-body">
+      <!-- Left Collapsible Sidebar -->
+      <app-sidebar
+        [isCollapsed]="sidebarCollapsed()"
+        (quickAction)="handleSidebarQuickAction($event)"
+        (openNewProject)="isNewProjectOpen.set(true)"
+        (openHealthModal)="isHealthOpen.set(true)"
+        (openRolesModal)="isRolesOpen.set(true)"
+        (openUsersModal)="isUsersOpen.set(true)">
+      </app-sidebar>
+
+      <!-- Main Viewport Router -->
+      <main class="main-content-viewport" [class.sidebar-collapsed]="sidebarCollapsed()">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
+
+    <!-- Toast Notification Stack -->
+    <app-toast-container></app-toast-container>
+
+    <!-- Global Modals -->
+    @if (isLauncherOpen()) {
+      <app-app-launcher-modal (close)="isLauncherOpen.set(false)"></app-app-launcher-modal>
+    }
+
+    @if (isProfileOpen()) {
+      <app-profile-modal (close)="isProfileOpen.set(false)"></app-profile-modal>
+    }
+
+    @if (isHealthOpen()) {
+      <app-health-modal (close)="isHealthOpen.set(false)"></app-health-modal>
+    }
+
+    @if (isPolicyOpen()) {
+      <app-policy-modal (close)="isPolicyOpen.set(false)"></app-policy-modal>
+    }
+
+    @if (isRolesOpen() && authService.isAdmin()) {
+      <app-roles-modal (close)="isRolesOpen.set(false)"></app-roles-modal>
+    }
+
+    @if (isUsersOpen() && authService.isAdmin()) {
+      <app-users-modal (close)="isUsersOpen.set(false)"></app-users-modal>
+    }
+
+    @if (isNewProjectOpen()) {
+      <app-project-modal
+        (save)="handleSaveNewProject($event)"
+        (cancel)="isNewProjectOpen.set(false)">
+      </app-project-modal>
+    }
+  </div>
+}

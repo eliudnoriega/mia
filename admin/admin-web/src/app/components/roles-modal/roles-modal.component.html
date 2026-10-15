@@ -1,0 +1,369 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-dialog animate-scale" (click)="$event.stopPropagation()">
+
+    <!-- Modal Header -->
+    <header class="modal-header">
+      <div class="header-main">
+        <div class="header-icon-badge">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <circle cx="12" cy="11" r="3" />
+            <path d="M12 14v3" />
+          </svg>
+        </div>
+        <div>
+          <div class="badge-tag">MIA · Exclusivo Administradores</div>
+          <h2 class="title">Administración de Roles y Privilegios</h2>
+          <p class="subtitle">Control centralizado de perfiles de acceso y seguridad conectado a admin-api</p>
+        </div>
+      </div>
+      <button type="button" class="close-btn" (click)="onClose()" title="Cerrar ventana">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Nav Tabs -->
+    <nav class="tabs-nav">
+      <button type="button" class="tab-btn" [class.active]="activeTab() === 'roles'" (click)="activeTab.set('roles')">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span>Catálogo de Roles</span>
+        <span class="count-pill">{{ roleService.roles().length }}</span>
+      </button>
+
+      <button type="button" class="tab-btn" [class.active]="activeTab() === 'assignments'"
+        (click)="activeTab.set('assignments')">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <polyline points="16 11 18 13 22 9" />
+        </svg>
+        <span>Asignación de Roles por Usuario</span>
+        <span class="count-pill">{{ roleService.users().length }}</span>
+      </button>
+    </nav>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+
+      <!-- TAB 1: CATÁLOGO DE ROLES -->
+      @if (activeTab() === 'roles') {
+
+      <!-- Formulario Crear/Editar Rol -->
+      @if (isEditing()) {
+      <div class="role-form-card animate-scale">
+        <div class="form-header">
+          <h3>{{ editingRoleId() !== null ? 'Modificar Rol Existente' : 'Registrar Nuevo Rol' }}</h3>
+          <span class="form-hint">admin-api normaliza automáticamente el prefijo ROLE_</span>
+        </div>
+
+        @if (formError()) {
+        <div class="error-banner">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+          <span>{{ formError() }}</span>
+        </div>
+        }
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="roleName">Nombre o Clave del Rol *</label>
+            <div class="input-with-prefix">
+              <span class="prefix">ROLE_</span>
+              <input id="roleName" type="text" class="form-control input-prefixed"
+                placeholder="AUDITOR_TI, SUPERVISOR, etc." [(ngModel)]="formRoleName" (keyup.enter)="saveRole()"
+                maxlength="45">
+            </div>
+            <small class="field-help">Solo caracteres alfanuméricos en mayúsculas (se guardará como ROLE_{{
+              formRoleName.toUpperCase() }})</small>
+          </div>
+
+          <div class="form-field">
+            <label for="roleDesc">Descripción del Perfil y Alcance</label>
+            <input id="roleDesc" type="text" class="form-control"
+              placeholder="Describe los permisos y propósito de este rol..." [(ngModel)]="formRoleDescription"
+              (keyup.enter)="saveRole()" maxlength="200">
+            <small class="field-help">Breve detalle visible para auditoría y asignaciones</small>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="isSaving()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-primary" (click)="saveRole()" [disabled]="isSaving()">
+            @if (isSaving()) {
+            <span class="spinner-small"></span> Guardando en API...
+            } @else {
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            <span>{{ editingRoleId() !== null ? 'Actualizar Rol' : 'Crear Rol' }}</span>
+            }
+          </button>
+        </div>
+      </div>
+      }
+
+      <!-- Toolbar Superior: Búsqueda y Botón Nuevo -->
+      <div class="catalog-toolbar">
+        <div class="search-input-box">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="search-input" placeholder="Buscar rol por nombre o descripción..."
+            [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
+        </div>
+
+        @if (!isEditing()) {
+        <button type="button" class="btn-new-role" (click)="startCreateRole()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>+ Nuevo Rol</span>
+        </button>
+        }
+      </div>
+
+      <!-- Lista / Rejilla de Roles -->
+      @if (roleService.isLoading() && roleService.roles().length === 0) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Consultando catálogo de roles desde admin-api (puerto 8080)...</p>
+      </div>
+      } @else if (filteredRoles().length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#94a3b8" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <h4>No se encontraron roles coincidentes</h4>
+        <p>Intenta con otro término de búsqueda o registra un nuevo rol.</p>
+      </div>
+      } @else {
+      <div class="roles-grid">
+        @for (role of filteredRoles(); track role.id) {
+        <div class="role-card" [class]="getRoleThemeClass(role.name)">
+
+          <div class="role-card-top">
+            <div class="role-badge-row">
+              <span class="role-chip">{{ getCleanRoleBadge(role.name) }}</span>
+              @if (isSystemRole(role.name)) {
+              <span class="system-tag" title="Rol protegido del sistema">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Sistema
+              </span>
+              }
+            </div>
+
+            <div class="role-actions">
+              <button type="button" class="card-act-btn edit" (click)="startEditRole(role)"
+                title="Modificar nombre o descripción">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+
+              @if (role.name !== 'ROLE_ADMIN') {
+              <button type="button" class="card-act-btn delete" (click)="promptDeleteRole(role)"
+                title="Eliminar este rol">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+              }
+            </div>
+          </div>
+
+          <div class="role-card-body">
+            <h4 class="role-name-title">{{ role.name }}</h4>
+            <p class="role-desc-text">{{ role.description || 'Sin descripción configurada.' }}</p>
+          </div>
+
+          <div class="role-card-footer">
+            <div class="user-count-badge">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>{{ roleService.getUserCountForRole(role.name) }} usuario(s) asignado(s)</span>
+            </div>
+            <span class="role-id-tag">ID: #{{ role.id }}</span>
+          </div>
+
+        </div>
+        }
+      </div>
+      }
+      }
+
+      <!-- TAB 2: ASIGNACIÓN DE ROLES POR USUARIO -->
+      @if (activeTab() === 'assignments') {
+      <div class="assignments-layout">
+
+        <!-- Lista de Usuarios a la izquierda -->
+        <div class="users-sidebar">
+          <div class="users-sidebar-header">
+            <span class="lbl">Seleccionar Usuario</span>
+            <span class="badge">{{ roleService.users().length }}</span>
+          </div>
+
+          <div class="users-scroll">
+            @for (user of roleService.users(); track user.id) {
+            <div class="user-item-btn" [class.active]="selectedUser()?.id === user.id"
+              (click)="selectUserForAssignment(user)">
+
+              <div class="u-avatar">
+                {{ (user.fullName || user.username).substring(0, 2).toUpperCase() }}
+              </div>
+              <div class="u-info">
+                <strong class="u-name">{{ user.fullName || user.username }}</strong>
+                <span class="u-meta">&#64;{{ user.username }} · {{ user.email }}</span>
+                <div class="u-role-tags">
+                  @for (r of user.roles; track r) {
+                  <span class="u-mini-pill">{{ getCleanRoleBadge(r) }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Panel de Roles del Usuario Seleccionado -->
+        <div class="user-roles-panel">
+          @if (selectedUser(); as u) {
+          <div class="panel-header">
+            <div class="user-hero-card">
+              <div class="hero-avatar">
+                {{ (u.fullName || u.username).substring(0, 2).toUpperCase() }}
+              </div>
+              <div class="hero-info">
+                <h3>{{ u.fullName || u.username }}</h3>
+                <p class="hero-sub">&#64;{{ u.username }} &bull; {{ u.email }} &bull; ID #USR-{{ u.id }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-content">
+            <h4 class="section-heading">Roles y Permisos Asignados</h4>
+            <p class="section-sub">Marca o desmarca los roles que este colaborador tendrá habilitados en MIA:</p>
+
+            <div class="role-checklist">
+              @for (role of roleService.roles(); track role.id) {
+              <div class="checklist-item" [class.checked]="isRoleCheckedForSelectedUser(role.name)"
+                (click)="toggleRoleForSelectedUser(role.name)">
+
+                <div class="checkbox-circle" [class.active]="isRoleCheckedForSelectedUser(role.name)">
+                  @if (isRoleCheckedForSelectedUser(role.name)) {
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  }
+                </div>
+
+                <div class="check-texts">
+                  <div class="check-title-row">
+                    <strong class="check-name">{{ role.name }}</strong>
+                    <span class="check-chip" [class]="getRoleThemeClass(role.name)">
+                      {{ getCleanRoleBadge(role.name) }}
+                    </span>
+                  </div>
+                  <p class="check-desc">{{ role.description || 'Sin descripción detallada.' }}</p>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="panel-footer">
+            <span class="assign-hint">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              Los cambios se sincronizan en vivo contra /api/users/{{ u.id }}/roles
+            </span>
+            <button type="button" class="btn-primary" (click)="saveUserRolesAssignment()"
+              [disabled]="isSavingAssignment()">
+              @if (isSavingAssignment()) {
+              <span class="spinner-small"></span> Guardando en API...
+              } @else {
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              <span>Guardar Asignación</span>
+              }
+            </button>
+          </div>
+          } @else {
+          <div class="empty-selection">
+            <p>Selecciona un usuario del listado lateral para gestionar sus roles.</p>
+          </div>
+          }
+        </div>
+
+      </div>
+      }
+
+    </div>
+
+    <!-- Modal Footer -->
+    <footer class="modal-footer">
+      <div class="footer-status">
+        <span class="status-indicator-live"></span>
+        <span>Conectado a <strong>admin-api (8080)</strong> &bull; Modo Administrador Activo</span>
+      </div>
+      <button type="button" class="btn-close-action" (click)="onClose()">
+        Cerrar
+      </button>
+    </footer>
+
+    <!-- Overlay Diálogo de Confirmación para Eliminar Rol -->
+    @if (roleToDelete(); as r) {
+    <div class="delete-confirm-overlay animate-scale" (click)="$event.stopPropagation()">
+      <div class="confirm-dialog">
+        <div class="confirm-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#ef4444" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <h3>¿Eliminar el rol "{{ r.name }}"?</h3>
+        <p>
+          Esta acción eliminará permanentemente la definición del rol en el sistema y desasociará este perfil de los
+          usuarios asignados.
+        </p>
+        <div class="confirm-buttons">
+          <button type="button" class="btn-secondary" (click)="cancelDelete()">Cancelar</button>
+          <button type="button" class="btn-danger" (click)="confirmDeleteRole()">Sí, Eliminar Rol</button>
+        </div>
+      </div>
+    </div>
+    }
+
+  </div>
+</div>

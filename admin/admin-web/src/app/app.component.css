@@ -1,0 +1,21 @@
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f4f7fb;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 68px);
+  position: relative;
+}
+
+.main-content-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background-color: #f4f7fb;
+  transition: margin-left 0.25s ease;
+}

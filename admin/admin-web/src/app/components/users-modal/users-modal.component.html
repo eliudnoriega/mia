@@ -1,0 +1,656 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-dialog animate-scale" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <header class="modal-header">
+      <div class="header-main">
+        <div class="header-icon-badge">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="badge-tag">MIA &bull; Exclusivo Administradores</div>
+          <h2 class="title">Administración de Usuarios y Empresas</h2>
+          <p class="subtitle">Gestión y edición de colaboradores, perfiles y empresas (Companies) asociadas</p>
+        </div>
+      </div>
+      <button type="button" class="close-btn" (click)="onClose()" title="Cerrar ventana">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Toolbar: Búsqueda, Filtro por Empresa y Botón Crear -->
+    <div class="users-toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="search-input" placeholder="Buscar por nombre, usuario, correo o empresa..."
+            [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
+        </div>
+
+        <div class="company-filter-box">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21h18"></path>
+            <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+          </svg>
+          <select class="filter-select" [ngModel]="selectedCompanyFilter()"
+            (ngModelChange)="selectedCompanyFilter.set($event)">
+            <option value="all">Todas las Empresas ({{ userAdminService.users().length }})</option>
+            @for (comp of userAdminService.companies(); track comp.id) {
+            <option [value]="comp.id">{{ comp.name }}</option>
+            }
+            <option value="none">Sin Empresa Asignada</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="btn-new-user" (click)="openCreateUser()" [disabled]="isCreatingUser()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>+ Nuevo Usuario</span>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+
+      <!-- Formulario para Modificar Usuario Existente -->
+      @if (editingUser(); as eu) {
+      <div class="user-form-card edit-theme animate-scale">
+        <div class="form-header">
+          <div class="f-title">
+            <div class="edit-badge-tag">Modificando Usuario #USR-{{ eu.id }}</div>
+            <h3>Editar Información del Colaborador</h3>
+            <p>Actualiza los datos del perfil, la empresa asignada y los roles de acceso de &#64;{{ eu.username }}.</p>
+          </div>
+          <button type="button" class="form-close" (click)="cancelEditUser()">&times;</button>
+        </div>
+
+        @if (editError()) {
+        <div class="error-banner">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+          <span>{{ editError() }}</span>
+        </div>
+        }
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Nombre Completo *</label>
+            <input type="text" class="form-control" placeholder="Nombre del usuario..." [(ngModel)]="editFullName">
+          </div>
+
+          <div class="form-field">
+            <label>Correo Electrónico *</label>
+            <input type="email" class="form-control" placeholder="correo@mia.com.gt" [(ngModel)]="editEmail">
+          </div>
+
+          <!-- Selector de Empresa (Company) -->
+          <div class="form-field full-width">
+            <label class="label-highlight">Empresa Asociada (Company)</label>
+            <div class="company-picker">
+              <select class="form-control company-select" [(ngModel)]="editCompanyId">
+                <option [ngValue]="null">-- Sin Empresa Asignada --</option>
+                @for (comp of userAdminService.companies(); track comp.id) {
+                <option [ngValue]="comp.id">{{ comp.name }} &bull; NIT: {{ comp.taxId || 'N/A' }}</option>
+                }
+              </select>
+              <span class="picker-hint">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                La empresa asociada se sincroniza directamente en admin-api
+              </span>
+            </div>
+          </div>
+
+          <!-- Roles Asignables -->
+          <div class="form-field full-width">
+            <label>Roles de Acceso Asignados</label>
+            <div class="roles-selection-row">
+              @for (role of roleService.roles(); track role.id) {
+              <label class="role-checkbox-pill" [class.selected]="selectedRolesForEditUser().has(role.name)">
+                <input type="checkbox" [checked]="selectedRolesForEditUser().has(role.name)"
+                  (change)="toggleRoleForEditUser(role.name)">
+                <span>{{ getCleanRole(role.name) }}</span>
+              </label>
+              }
+            </div>
+          </div>
+
+          <!-- Sistemas y Proyectos Asignables al Usuario -->
+          <div class="form-field full-width projects-assignment-section">
+            <div class="section-label-bar">
+              <div class="label-with-count">
+                <label class="label-highlight">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                  </svg>
+                  <span>Sistemas y Proyectos Asignados</span>
+                </label>
+                <span class="projects-assigned-count">
+                  {{ selectedProjectsForEditUser().size }} de {{ availableProjects().length }} sistemas asignados
+                </span>
+              </div>
+
+              <div class="projects-quick-actions">
+                <button type="button" class="btn-action-small" (click)="selectAllProjectsForEdit()">
+                  Seleccionar Todos
+                </button>
+                <button type="button" class="btn-action-small secondary" (click)="clearAllProjectsForEdit()">
+                  Deseleccionar Todos
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtro y Búsqueda de Sistemas -->
+            <div class="projects-filter-bar">
+              <div class="p-search-input-wrap">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" class="p-search-input" placeholder="Buscar sistema por nombre, clave o categoría..."
+                  [ngModel]="projectSearchTerm()" (ngModelChange)="projectSearchTerm.set($event)">
+              </div>
+
+              <div class="p-filters-row">
+                <!-- Scope Filter: Todos / Asignados / Disponibles -->
+                <div class="scope-toggle-group">
+                  <button type="button" class="scope-btn" [class.active]="projectScopeFilter() === 'all'"
+                    (click)="projectScopeFilter.set('all')">
+                    Todos ({{ availableProjects().length }})
+                  </button>
+                  <button type="button" class="scope-btn" [class.active]="projectScopeFilter() === 'assigned'"
+                    (click)="projectScopeFilter.set('assigned')">
+                    Asignados ({{ selectedProjectsForEditUser().size }})
+                  </button>
+                  <button type="button" class="scope-btn" [class.active]="projectScopeFilter() === 'unassigned'"
+                    (click)="projectScopeFilter.set('unassigned')">
+                    Disponibles ({{ availableProjects().length - selectedProjectsForEditUser().size }})
+                  </button>
+                </div>
+
+                <!-- Categoría Dropdown -->
+                <select class="p-category-select" [ngModel]="projectCategoryFilter()"
+                  (ngModelChange)="projectCategoryFilter.set($event)">
+                  <option value="todos">Todas las categorías</option>
+                  <option value="corporativo">Corporativo</option>
+                  <option value="web">Portales Web</option>
+                  <option value="api">APIs & Backend</option>
+                  <option value="rrhh">Recursos Humanos</option>
+                  <option value="operaciones">Operaciones</option>
+                  <option value="finanzas">Finanzas</option>
+                  <option value="seguridad">Seguridad</option>
+                  <option value="soporte">Soporte</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Grid de Proyectos / Sistemas -->
+            <div class="projects-selection-grid">
+              @if (filteredProjectsForEdit().length > 0) {
+              @for (proj of filteredProjectsForEdit(); track proj.id) {
+              <div class="project-select-card" [class.is-selected]="selectedProjectsForEditUser().has(proj.id)"
+                (click)="toggleProjectForEditUser(proj.id)">
+
+                <div class="p-card-left">
+                  <div class="p-card-icon" [style.background-color]="proj.iconBgColor || '#0284c7'">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#ffffff" stroke-width="2">
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                      <line x1="8" y1="21" x2="16" y2="21" />
+                      <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                  </div>
+                  <div class="p-card-info">
+                    <span class="p-title" [title]="proj.title">{{ proj.title }}</span>
+                    <span class="p-category">{{ proj.categoryLabel || proj.category }}</span>
+                  </div>
+                </div>
+
+                <div class="p-card-right">
+                  @if (selectedProjectsForEditUser().has(proj.id)) {
+                  <span class="status-assigned-badge" title="Haga clic para quitar sistema">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Asignado</span>
+                  </span>
+                  } @else {
+                  <span class="status-add-badge" title="Haga clic para asignar sistema">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Agregar</span>
+                  </span>
+                  }
+                </div>
+
+              </div>
+              }
+              } @else {
+              <div class="no-projects-match">
+                <p>No se encontraron sistemas que coincidan con la búsqueda o filtro.</p>
+              </div>
+              }
+            </div>
+
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelEditUser()" [disabled]="isUpdatingUser()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-primary" (click)="submitUpdateUser()" [disabled]="isUpdatingUser()">
+            @if (isUpdatingUser()) {
+            <span class="spinner-small"></span> Guardando Cambios...
+            } @else {
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            <span>Guardar Cambios</span>
+            }
+          </button>
+        </div>
+      </div>
+      }
+
+      <!-- Formulario para Registrar Nuevo Usuario con Empresa -->
+      @if (isCreatingUser()) {
+      <div class="user-form-card animate-scale">
+        <div class="form-header">
+          <div class="f-title">
+            <h3>Registrar Nuevo Colaborador</h3>
+            <p>El usuario será dado de alta en admin-api y vinculado directamente a la empresa indicada.</p>
+          </div>
+          <button type="button" class="form-close" (click)="cancelCreateUser()">&times;</button>
+        </div>
+
+        @if (formError()) {
+        <div class="error-banner">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+          <span>{{ formError() }}</span>
+        </div>
+        }
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Nombre Completo *</label>
+            <input type="text" class="form-control" placeholder="Ej. Roberto Castillo Gómez" [(ngModel)]="newFullName">
+          </div>
+
+          <div class="form-field">
+            <label>Nombre de Usuario (Username) *</label>
+            <input type="text" class="form-control" placeholder="Ej. rcastillo" [(ngModel)]="newUsername">
+          </div>
+
+          <div class="form-field">
+            <label>Correo Electrónico *</label>
+            <input type="email" class="form-control" placeholder="rcastillo@mia.com.gt" [(ngModel)]="newEmail">
+          </div>
+
+          <div class="form-field">
+            <label>Contraseña Inicial *</label>
+            <input type="password" class="form-control" placeholder="Mínimo 6 caracteres" [(ngModel)]="newPassword">
+          </div>
+
+          <!-- Selector de Empresa (Company) -->
+          <div class="form-field full-width">
+            <label class="label-highlight">Empresa Asociada (Company) *</label>
+            <div class="company-picker">
+              <select class="form-control company-select" [(ngModel)]="newCompanyId">
+                <option [ngValue]="null">-- Sin Empresa Asignada --</option>
+                @for (comp of userAdminService.companies(); track comp.id) {
+                <option [ngValue]="comp.id">{{ comp.name }} &bull; NIT: {{ comp.taxId || 'N/A' }}</option>
+                }
+              </select>
+              <span class="picker-hint">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                El usuario pertenecerá formalmente a esta empresa en admin-api
+              </span>
+            </div>
+          </div>
+
+          <!-- Roles Asignables -->
+          <div class="form-field full-width">
+            <label>Roles de Acceso a Conceder</label>
+            <div class="roles-selection-row">
+              @for (role of roleService.roles(); track role.id) {
+              <label class="role-checkbox-pill" [class.selected]="selectedRolesForNewUser().has(role.name)">
+                <input type="checkbox" [checked]="selectedRolesForNewUser().has(role.name)"
+                  (change)="toggleRoleForNewUser(role.name)">
+                <span>{{ getCleanRole(role.name) }}</span>
+              </label>
+              }
+            </div>
+          </div>
+
+          <!-- Sistemas / Proyectos Asignables en Creación -->
+          <div class="form-field full-width projects-assignment-section">
+            <div class="section-label-bar">
+              <div class="label-with-count">
+                <label class="label-highlight">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                  </svg>
+                  <span>Sistemas y Proyectos Iniciales</span>
+                </label>
+                <span class="projects-assigned-count">
+                  {{ selectedProjectsForNewUser().size }} seleccionados
+                </span>
+              </div>
+
+              <div class="projects-quick-actions">
+                <button type="button" class="btn-action-small" (click)="selectAllProjectsForNewUser()">
+                  Seleccionar Todos
+                </button>
+                <button type="button" class="btn-action-small secondary" (click)="clearAllProjectsForNewUser()">
+                  Deseleccionar Todos
+                </button>
+              </div>
+            </div>
+
+            <div class="projects-selection-grid compact-grid">
+              @for (proj of availableProjects(); track proj.id) {
+              <div class="project-select-card" [class.is-selected]="selectedProjectsForNewUser().has(proj.id)"
+                (click)="toggleProjectForNewUser(proj.id)">
+                <div class="p-card-left">
+                  <div class="p-card-icon" [style.background-color]="proj.iconBgColor || '#0284c7'">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2">
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    </svg>
+                  </div>
+                  <div class="p-card-info">
+                    <span class="p-title">{{ proj.title }}</span>
+                  </div>
+                </div>
+                <div class="p-card-right">
+                  @if (selectedProjectsForNewUser().has(proj.id)) {
+                  <span class="status-assigned-badge">Asignado</span>
+                  } @else {
+                  <span class="status-add-badge">+ Agregar</span>
+                  }
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelCreateUser()" [disabled]="isSavingUser()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-primary" (click)="submitCreateUser()" [disabled]="isSavingUser()">
+            @if (isSavingUser()) {
+            <span class="spinner-small"></span> Registrando en API...
+            } @else {
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            <span>Guardar y Asociar Empresa</span>
+            }
+          </button>
+        </div>
+      </div>
+      }
+
+      <!-- Grid de Usuarios Registrados -->
+      @if (userAdminService.isLoading() && userAdminService.users().length === 0) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando usuarios y empresas desde admin-api (8080)...</p>
+      </div>
+      } @else if (filteredUsers().length === 0) {
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#94a3b8" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <h4>No se encontraron colaboradores</h4>
+        <p>Verifica los filtros aplicados o registra un nuevo usuario en el sistema.</p>
+      </div>
+      } @else {
+      <div class="users-grid">
+        @for (user of filteredUsers(); track user.id) {
+        <div class="user-card animate-scale" [class.is-editing]="editingUser()?.id === user.id">
+
+          <!-- Card Top: Avatar, Datos, Botón Editar y Tag de ID -->
+          <div class="card-top">
+            <div class="user-avatar-circle">
+              {{ getUserInitials(user.fullName || user.username) }}
+            </div>
+            <div class="user-names">
+              <h4 class="user-title" [title]="user.fullName">{{ user.fullName || user.username }}</h4>
+              <span class="username-handle">&#64;{{ user.username }}</span>
+            </div>
+
+            <div class="card-top-right">
+              <button type="button" class="btn-user-edit" (click)="openEditUser(user)"
+                title="Editar información de este usuario">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                <span>Editar</span>
+              </button>
+              <span class="user-id-badge">#USR-{{ user.id }}</span>
+            </div>
+          </div>
+
+          <!-- Contacto -->
+          <div class="user-contact">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <span class="email-text" [title]="user.email">{{ user.email }}</span>
+          </div>
+
+          <!-- SECCIÓN DESTACADA: EMPRESA ASOCIADA (COMPANY) -->
+          <div class="company-section">
+            <div class="company-section-header">
+              <div class="cs-label">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 21h18"></path>
+                  <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+                  <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                  <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                  <line x1="9" y1="13" x2="9.01" y2="13"></line>
+                  <line x1="15" y1="13" x2="15.01" y2="13"></line>
+                </svg>
+                <span>EMPRESA (COMPANY)</span>
+              </div>
+
+              <button type="button" class="btn-edit-company" (click)="openAssignCompanyModal(user)"
+                title="Asignar o cambiar empresa">
+                Cambiar
+              </button>
+            </div>
+
+            <div class="company-info-box" [class.has-company]="!!user.company">
+              @if (user.company) {
+              <div class="comp-badge-row">
+                <strong class="comp-name">{{ user.company.name }}</strong>
+                @if (user.company.taxId) {
+                <span class="comp-tax">NIT: {{ user.company.taxId }}</span>
+                }
+              </div>
+              @if (user.company.address) {
+              <span class="comp-addr" [title]="user.company.address">{{ user.company.address }}</span>
+              }
+              } @else {
+              <div class="no-company-row">
+                <span class="no-comp-text">Sin empresa asociada actualmente</span>
+                <button type="button" class="btn-link-action" (click)="openAssignCompanyModal(user)">
+                  + Asociar Empresa
+                </button>
+              </div>
+              }
+            </div>
+
+            <!-- Selector rápido en línea -->
+            <div class="quick-switcher">
+              <label>Asignación rápida:</label>
+              <select class="quick-select" [value]="user.company?.id ?? 'none'"
+                (change)="quickChangeCompany(user, $event)">
+                <option value="none">-- Sin Empresa --</option>
+                @for (comp of userAdminService.companies(); track comp.id) {
+                <option [value]="comp.id">{{ comp.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Roles y Sistemas -->
+          <div class="card-bottom">
+            <div class="roles-chips-list">
+              @for (r of user.roles; track r) {
+              <span class="role-pill" [class.admin-pill]="r === 'ROLE_ADMIN'">
+                {{ getCleanRole(r) }}
+              </span>
+              }
+            </div>
+
+            <div class="systems-badge clickable" (click)="openEditUser(user)"
+              title="Haga clic para editar los sistemas asignados a este colaborador">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+              <span>{{ user.projectIds?.length || 0 }} sistemas</span>
+            </div>
+          </div>
+
+        </div>
+        }
+      </div>
+      }
+
+    </div>
+
+    <!-- Modal Footer -->
+    <footer class="modal-footer">
+      <div class="footer-info">
+        <span class="live-dot"></span>
+        <span>Conectado a <strong>admin-api (8080)</strong> &bull; {{ userAdminService.users().length }} usuarios &bull;
+          {{ userAdminService.companies().length }} empresas</span>
+      </div>
+      <button type="button" class="btn-close-footer" (click)="onClose()">
+        Cerrar
+      </button>
+    </footer>
+
+    <!-- SUB-MODAL: ASIGNAR / CAMBIAR EMPRESA -->
+    @if (userForCompanyChange(); as u) {
+    <div class="company-modal-overlay animate-scale" (click)="$event.stopPropagation()">
+      <div class="company-modal-box">
+        <div class="cm-header">
+          <div class="cm-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 21h18"></path>
+              <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+            </svg>
+          </div>
+          <div>
+            <h3>Asociar Empresa a Usuario</h3>
+            <p>Colaborador: <strong>{{ u.fullName || u.username }}</strong> (#USR-{{ u.id }})</p>
+          </div>
+          <button type="button" class="cm-close" (click)="closeAssignCompanyModal()">&times;</button>
+        </div>
+
+        <div class="cm-body">
+          <p class="cm-desc">
+            Selecciona la empresa (Company) a la que pertenecerá este usuario dentro de la estructura corporativa de
+            MIA:
+          </p>
+
+          <div class="company-options-list">
+            <label class="comp-option-card" [class.selected]="targetCompanyId() === null">
+              <input type="radio" name="companyPick" [checked]="targetCompanyId() === null"
+                (change)="targetCompanyId.set(null)">
+              <div class="opt-texts">
+                <strong>Ninguna (Desvincular Empresa)</strong>
+                <span>El usuario no quedará asociado a ninguna empresa en particular.</span>
+              </div>
+            </label>
+
+            @for (comp of userAdminService.companies(); track comp.id) {
+            <label class="comp-option-card" [class.selected]="targetCompanyId() === comp.id">
+              <input type="radio" name="companyPick" [checked]="targetCompanyId() === comp.id"
+                (change)="targetCompanyId.set(comp.id)">
+              <div class="opt-texts">
+                <div class="opt-title-row">
+                  <strong>{{ comp.name }}</strong>
+                  @if (comp.taxId) {
+                  <span class="opt-tax">NIT: {{ comp.taxId }}</span>
+                  }
+                </div>
+                <span class="opt-sub">{{ comp.address || comp.email || 'Empresa corporativa registrada' }}</span>
+              </div>
+            </label>
+            }
+          </div>
+        </div>
+
+        <div class="cm-footer">
+          <button type="button" class="btn-secondary" (click)="closeAssignCompanyModal()"
+            [disabled]="isAssigningCompany()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-primary" (click)="confirmAssignCompany()" [disabled]="isAssigningCompany()">
+            @if (isAssigningCompany()) {
+            <span class="spinner-small"></span> Guardando en API...
+            } @else {
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            <span>Confirmar Vinculación</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+  </div>
+</div>
